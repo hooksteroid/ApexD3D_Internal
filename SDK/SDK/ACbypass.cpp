@@ -188,21 +188,21 @@ typedef const UNICODE_STRING *PCUNICODE_STRING;
 
 typedef struct _SYSTEM_PROCESSES
 {
-	ULONG			NextEntryDelta;			//	æž„æˆç»“æž„åºåˆ—çš„åç§»é‡
-	ULONG			ThreadCount;			//	çº¿ç¨‹æ•°ç›®
+	ULONG			NextEntryDelta;			//	¹¹³É½á¹¹ÐòÁÐµÄÆ«ÒÆÁ¿
+	ULONG			ThreadCount;			//	Ïß³ÌÊýÄ¿
 	ULONG			Reserved1[6];
-	LARGE_INTEGER	CreateTime;				//	åˆ›å»ºæ—¶é—´
-	LARGE_INTEGER	UserTime;				//	ç”¨æˆ·æ¨¡å¼(Ring 3)çš„CPUæ—¶é—´
-	LARGE_INTEGER	KernelTime;				//	å†…æ ¸æ¨¡å¼(Ring 0)çš„CPUæ—¶é—´
-	UNICODE_STRING	ProcessName;			//	è¿›ç¨‹åç§°
-	KPRIORITY		BasePriority;			//	è¿›ç¨‹ä¼˜å…ˆæƒ
-	ULONG			ProcessId;				//	è¿›ç¨‹æ ‡è¯†ç¬¦
-	ULONG			InheritedFromProcessId;	//	çˆ¶è¿›ç¨‹çš„æ ‡è¯†ç¬¦
-	ULONG			HandleCount;			//	å¥æŸ„æ•°ç›®
+	LARGE_INTEGER	CreateTime;				//	´´½¨Ê±¼ä
+	LARGE_INTEGER	UserTime;				//	ÓÃ»§Ä£Ê½(Ring 3)µÄCPUÊ±¼ä
+	LARGE_INTEGER	KernelTime;				//	ÄÚºËÄ£Ê½(Ring 0)µÄCPUÊ±¼ä
+	UNICODE_STRING	ProcessName;			//	½ø³ÌÃû³Æ
+	KPRIORITY		BasePriority;			//	½ø³ÌÓÅÏÈÈ¨
+	ULONG			ProcessId;				//	½ø³Ì±êÊ¶·û
+	ULONG			InheritedFromProcessId;	//	¸¸½ø³ÌµÄ±êÊ¶·û
+	ULONG			HandleCount;			//	¾ä±úÊýÄ¿
 	ULONG			Reserved2[2];
-	VM_COUNTERS		VmCounters;				//	è™šæ‹Ÿå­˜å‚¨å™¨çš„ç»“æž„
-	IO_COUNTERS		IoCounters;				//	IOè®¡æ•°ç»“æž„
-	SYSTEM_THREADS	Threads[1];				//	è¿›ç¨‹ç›¸å…³çº¿ç¨‹çš„ç»“æž„æ•°ç»„
+	VM_COUNTERS		VmCounters;				//	ÐéÄâ´æ´¢Æ÷µÄ½á¹¹
+	IO_COUNTERS		IoCounters;				//	IO¼ÆÊý½á¹¹
+	SYSTEM_THREADS	Threads[1];				//	½ø³ÌÏà¹ØÏß³ÌµÄ½á¹¹Êý×é
 } SYSTEM_PROCESSES, *PSYSTEM_PROCESSES;
 
 
@@ -320,7 +320,7 @@ NTSTATUS NTAPI MyZwQueryInformationThread(IN HANDLE ThreadHandle, IN THREADINFOC
 		if (ThreadInformation >= global::g_hInst && ThreadInformation <= (global::g_hInst + global::g_dwModuleSize))
 		{
 			ThreadInformation = NULL;
-			//è¿™å¯ä¸è¡Œ
+			//Õâ¿É²»ÐÐ
 			DbgPrintA("MyZwQueryInformationThread: 0x%llX", ThreadInformation);
 			return STATUS_UNSUCCESSFUL;
 		}
@@ -466,7 +466,7 @@ __int64 WINAPI MyRtlUserThreadStart(PTHREAD_START_ROUTINE pfnStartAddr, PVOID pv
 {
 	if ((HANDLE)pfnStartAddr >= global::g_hInst && (HANDLE)pfnStartAddr <= (global::g_hInst + global::g_dwModuleSize))
 	{
-		//è‡ªå·±çš„ä¸ç»è¿‡EACçš„
+		//×Ô¼ºµÄ²»¾­¹ýEACµÄ
 		DbgPrintA("MyRtlUserThreadStart My Thread! 0x%11X", pfnStartAddr);
 		static _BaseThreadInitThunk BaseThreadInitThunk = (_BaseThreadInitThunk)GetProcAddress(GetModuleHandleA("kernel32.dll"), XorString("BaseThreadInitThunk"));
 		return BaseThreadInitThunk(0, pfnStartAddr, pvParam);
@@ -482,7 +482,7 @@ BOOL MyThread32Next(HANDLE hSnapshot, LPTHREADENTRY32 lpte)
 	BOOL Result = Old_Thread32Next(hSnapshot, lpte);
 	if (lpte->th32ThreadID == ThreadID)
 	{
-		DbgPrintA("MyThread32Next EACè¯•å›¾æŸ¥è¯¢çº¿ç¨‹ID! %d", lpte->th32ThreadID);
+		DbgPrintA("MyThread32Next EACÊÔÍ¼²éÑ¯Ïß³ÌID! %d", lpte->th32ThreadID);
 		lpte->th32OwnerProcessID = 0;
 		lpte->th32ThreadID = random(666);
 	}
@@ -495,7 +495,7 @@ HANDLE MyOpenThread(_In_ DWORD dwDesiredAccess, _In_ BOOL bInheritHandle, _In_ D
 	DWORD threadID = dwThreadId;
 	if (threadID == ThreadID)
 	{
-		DbgPrintA("MyOpenThread EACè¯•å›¾æ‰“å¼€çº¿ç¨‹! %d", dwThreadId);
+		DbgPrintA("MyOpenThread EACÊÔÍ¼´ò¿ªÏß³Ì! %d", dwThreadId);
 		threadID = 0;
 	}
 		
@@ -520,55 +520,55 @@ void StartHook()
 		/*
 		if (MH_CreateHookApi(L"kernel32.dll", XorString("Thread32Next"), &MyThread32Next, reinterpret_cast<void**>(&Old_Thread32Next)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥Thread32Next");
+			DbgPrintA("Ê§°ÜThread32Next");
 			return;
 		}*/
 		if (MH_CreateHookApi(L"kernel32.dll", XorString("OpenThread"), &MyOpenThread, reinterpret_cast<void**>(&Old_OpenThread)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥OpenThread");
+			DbgPrintA("Ê§°ÜOpenThread");
 			return;
 		}
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("ZwQueryVirtualMemory"), &MyZwQueryVirtualMemory, reinterpret_cast<void**>(&Old_ZwQueryVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥ZwQueryVirtualMemory");
+			DbgPrintA("Ê§°ÜZwQueryVirtualMemory");
 			return;
 		}
 		/*
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("RtlUserThreadStart"), &MyRtlUserThreadStart, reinterpret_cast<void**>(&Old_RtlUserThreadStart)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥RtlUserThreadStart");
+			DbgPrintA("Ê§°ÜRtlUserThreadStart");
 			return;
 		}*/
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("ZwReadVirtualMemory"), &MyZwReadVirtualMemory, reinterpret_cast<void**>(&Old_ZwReadVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥ZwReadVirtualMemory");
+			DbgPrintA("Ê§°ÜZwReadVirtualMemory");
 			return;
 		}
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("ZwProtectVirtualMemory"), &MyZwProtectVirtualMemory, reinterpret_cast<void**>(&Old_ZwProtectVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥ZwProtectVirtualMemory");
+			DbgPrintA("Ê§°ÜZwProtectVirtualMemory");
 			return;
 		}
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("ZwQueryInformationThread"), &MyZwQueryInformationThread, reinterpret_cast<void**>(&Old_ZwQueryInformationThread)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥MyZwQueryInformationThread");
+			DbgPrintA("Ê§°ÜMyZwQueryInformationThread");
 			return;
 		}
 		if (MH_CreateHookApi(L"ntdll.dll", XorString("RtlGetNativeSystemInformation"), &MyRtlGetNativeSystemInformation, reinterpret_cast<void**>(&Old_RtlGetNativeSystemInformation)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥RtlGetNativeSystemInformation");
+			DbgPrintA("Ê§°ÜRtlGetNativeSystemInformation");
 			return;
 		}
 		
 		if (MH_CreateHookApi(L"kernel32.dll", XorString("IsBadReadPtr"), &MyIsBadReadPtr, reinterpret_cast<void**>(&Old_IsBadReadPtr)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥IsBadReadPtr");
+			DbgPrintA("Ê§°ÜIsBadReadPtr");
 			return;
 		}
 		
 		if (MH_CreateHookApi(L"kernel32.dll", XorString("VirtualQuery"), &MyVirtualQuery, reinterpret_cast<void**>(&Old_VirtualQuery)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥VirtualQuery");
+			DbgPrintA("Ê§°ÜVirtualQuery");
 			return;
 		}
 
@@ -578,7 +578,7 @@ void StartHook()
 		_EnumProcessModulesEx EnumProcessModulesEx = (_EnumProcessModulesEx)GetProcAddress(hPsapi, "EnumProcessModulesEx");
 		if (MH_CreateHookApi(L"psapi.dll", "EnumProcessModulesEx", &MyEnumProcessModulesEx, reinterpret_cast<void**>(&Old_EnumProcessModulesEx)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥EnumProcessModulesEx");
+			DbgPrintA("Ê§°ÜEnumProcessModulesEx");
 			return;
 		}*/
 
@@ -586,61 +586,61 @@ void StartHook()
 		/*
 		if ((sts = MH_EnableHook(&Thread32Next)) != MH_OK)
 		{
-			DbgPrintA("Thread32Next å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("Thread32Next Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}*/
 		if ((sts = MH_EnableHook(&OpenThread)) != MH_OK)
 		{
-			DbgPrintA("OpenThread å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("OpenThread Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		if ((sts = MH_EnableHook(ZwQueryVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("ZwQueryVirtualMemory å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("ZwQueryVirtualMemory Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		if ((sts = MH_EnableHook(ZwReadVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("ZwReadVirtualMemory å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("ZwReadVirtualMemory Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		if ((sts = MH_EnableHook(ZwProtectVirtualMemory)) != MH_OK)
 		{
-			DbgPrintA("ZwProtectVirtualMemory å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("ZwProtectVirtualMemory Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		if ((sts = MH_EnableHook(RtlGetNativeSystemInformation)) != MH_OK)
 		{
-			DbgPrintA("RtlGetNativeSystemInformation å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("RtlGetNativeSystemInformation Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		
 		if ((sts = MH_EnableHook(&IsBadReadPtr)) != MH_OK)
 		{
-			DbgPrintA("IsBadReadPtr å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("IsBadReadPtr Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		
 		if ((sts = MH_EnableHook(VirtualQuery)) != MH_OK)
 		{
-			DbgPrintA("VirtualQuery å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("VirtualQuery Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		if ((sts = MH_EnableHook(ZwQueryInformationThread)) != MH_OK)
 		{
-			DbgPrintA("ZwQueryInformationThread å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("ZwQueryInformationThread Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		/*
 		if ((sts = MH_EnableHook(RtlUserThreadStart)) != MH_OK)
 		{
-			DbgPrintA("RtlUserThreadStart å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("RtlUserThreadStart Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}
 		
 		if ((sts = MH_EnableHook(EnumProcessModulesEx)) != MH_OK)
 		{
-			DbgPrintA("å¤±è´¥:%s", MH_StatusToString(sts));
+			DbgPrintA("Ê§°Ü:%s", MH_StatusToString(sts));
 			return;
 		}*/
 	}
